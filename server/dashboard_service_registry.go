@@ -12,6 +12,7 @@ import (
 
 	dashboardv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/dashboard/v1"
 	"github.com/byte-v-forge/common-lib/httpx"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const defaultTraefikAPIAddr = "http://traefik:8080"
@@ -58,7 +59,7 @@ func (s *server) handleServiceStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (r *dashboardServiceRegistry) snapshot(ctx context.Context) *dashboardv1.DashboardServiceStatusResponse {
-	checkedAt := time.Now().Unix()
+	checkedAt := time.Now().UTC()
 	if r == nil || r.client == nil {
 		return &dashboardv1.DashboardServiceStatusResponse{Services: []*dashboardv1.DashboardServiceStatus{traefikUnavailable(checkedAt, "Traefik API is not configured")}}
 	}
@@ -69,7 +70,7 @@ func (r *dashboardServiceRegistry) snapshot(ctx context.Context) *dashboardv1.Da
 	return &dashboardv1.DashboardServiceStatusResponse{Services: services}
 }
 
-func (c *traefikStatusClient) statuses(ctx context.Context, checkedAt int64, components []string) ([]*dashboardv1.DashboardServiceStatus, error) {
+func (c *traefikStatusClient) statuses(ctx context.Context, checkedAt time.Time, components []string) ([]*dashboardv1.DashboardServiceStatus, error) {
 	merged := map[string]*dashboardv1.DashboardServiceStatus{}
 	var errs []string
 	for _, endpoint := range []string{"/api/http/services", "/api/tcp/services"} {
@@ -119,12 +120,12 @@ func (c *traefikStatusClient) fetchServiceItems(ctx context.Context, endpoint st
 	return items, nil
 }
 
-func traefikServiceStatus(item map[string]any, checkedAt int64, components []string) *dashboardv1.DashboardServiceStatus {
+func traefikServiceStatus(item map[string]any, checkedAt time.Time, components []string) *dashboardv1.DashboardServiceStatus {
 	name := normalizeTraefikServiceName(stringField(item, "name"), components)
 	status := &dashboardv1.DashboardServiceStatus{
-		Name:          name,
-		Status:        dashboardv1.DashboardServiceStatusState_DASHBOARD_SERVICE_AVAILABLE,
-		CheckedAtUnix: checkedAt,
+		Name:      name,
+		Status:    dashboardv1.DashboardServiceStatusState_DASHBOARD_SERVICE_AVAILABLE,
+		CheckedAt: timestamppb.New(checkedAt),
 	}
 	messages := errorMessages(item)
 	serverStatus := mapField(item, "serverStatus")
@@ -244,11 +245,11 @@ func isUnavailableTraefikState(state string) bool {
 	}
 }
 
-func traefikUnavailable(checkedAt int64, message string) *dashboardv1.DashboardServiceStatus {
+func traefikUnavailable(checkedAt time.Time, message string) *dashboardv1.DashboardServiceStatus {
 	return &dashboardv1.DashboardServiceStatus{
-		Name:          "traefik",
-		Status:        dashboardv1.DashboardServiceStatusState_DASHBOARD_SERVICE_UNAVAILABLE,
-		Message:       message,
-		CheckedAtUnix: checkedAt,
+		Name:      "traefik",
+		Status:    dashboardv1.DashboardServiceStatusState_DASHBOARD_SERVICE_UNAVAILABLE,
+		Message:   message,
+		CheckedAt: timestamppb.New(checkedAt),
 	}
 }

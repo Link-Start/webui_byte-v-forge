@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import {
+  Button,
   DashboardServiceStatusState,
   DashboardShellSidebar,
   SidebarInset,
   SidebarProvider,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
   api,
   useQuery,
   type DashboardShellNavItem
@@ -71,10 +76,28 @@ export default function App() {
     <div className="shell">
       <SidebarProvider open={!sidebarCollapsed} onOpenChange={(open) => setSidebarCollapsed(!open)}>
         <DashboardShellSidebar items={sidebarItems} activeKey={activeView} onSelect={selectView} />
-        <SidebarInset className="contentPane">
+        <SidebarInset className="contentPane relative">
+          <ShellActions />
           <DashboardContent activeView={activeView} loading={modulesQuery.isLoading} views={views} />
         </SidebarInset>
       </SidebarProvider>
+    </div>
+  );
+}
+
+function ShellActions() {
+  return (
+    <div className="absolute right-5 top-4 z-20 flex items-center gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon-sm" aria-label="打开 Mihomo 面板" title="打开 Mihomo 面板" asChild>
+            <a href="/api/proxy-runtime/mihomo/dashboard">
+              <ExternalLink />
+            </a>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>打开 Mihomo 面板</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
