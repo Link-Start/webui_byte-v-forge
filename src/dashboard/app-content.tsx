@@ -1,11 +1,17 @@
 import { PanelNotice, WorkspacePanel } from '@byte-v-forge/common-ui';
-import type { DashboardModuleViews } from './module-registry';
+import { DASHBOARD_HOME_VIEW_KEY, type DashboardExternalApp, type DashboardModuleViews, type ServiceStatusMap } from './module-registry';
+import { DashboardHome } from './home-content';
 
-export function DashboardContent({ activeView, loading, views }: {
+export function DashboardContent({ activeView, externalApps, loading, serviceStatus, views }: {
   activeView: string;
+  externalApps: DashboardExternalApp[];
   loading: boolean;
+  serviceStatus: ServiceStatusMap;
   views: DashboardModuleViews;
 }) {
+  if (activeView === DASHBOARD_HOME_VIEW_KEY) {
+    return <DashboardHome externalApps={externalApps} serviceStatus={serviceStatus} />;
+  }
   if (loading) {
     return <Notice kind="info" title="正在加载模块" text="正在加载各服务发布的微前端模块。" />;
   }

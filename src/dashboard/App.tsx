@@ -1,28 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Home } from 'lucide-react';
 import {
-  Button,
   DashboardServiceStatusState,
   DashboardShellSidebar,
   SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarProvider,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
   api,
   useQuery,
   type DashboardShellNavItem
 } from '@byte-v-forge/common-ui';
 import { DashboardContent } from './app-content';
 import {
+  DASHBOARD_HOME_VIEW_KEY,
   buildDashboardNavItems,
   createDashboardModuleViews,
   indexServiceStatus,
+  loadDashboardExternalApps,
   loadDashboardModuleRegistrations,
   type DashboardNavItem,
   type DashboardServiceStatusResponse,
   type ServiceStatusMap
 } from './module-registry';
+
+const MIHOMO_PANEL_URL = '/api/proxy-runtime/mihomo/dashboard';
 
 export default function App() {
   const modulesQuery = useQuery({
@@ -32,7 +35,18 @@ export default function App() {
     retry: 1
   });
   const registrations = modulesQuery.data || [];
-  const navItems = useMemo(() => buildDashboardNavItems(registrations), [registrations]);
+  const externalApps = useMemo(() => loadDashboardExternalApps(), []);
+  const moduleNavItems = useMemo(() => buildDashboardNavItems(registrations), [registrations]);
+  const homeNavItem = useMemo<DashboardNavItem>(() => ({
+    key: DASHBOARD_HOME_VIEW_KEY,
+    moduleId: DASHBOARD_HOME_VIEW_KEY,
+    label: '首页',
+    icon: <Home size={17} />,
+    section: 'main',
+    requiredServices: [],
+    order: 0
+  }), []);
+  const navItems = useMemo(() => [homeNavItem, ...moduleNavItems], [homeNavItem, moduleNavItems]);
   const views = useMemo(() => createDashboardModuleViews(registrations), [registrations]);
   const [activeView, setActiveView] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('byte-v-forge-sidebar') === 'collapsed');
@@ -75,41 +89,47 @@ export default function App() {
   return (
     <div className="shell">
       <SidebarProvider open={!sidebarCollapsed} onOpenChange={(open) => setSidebarCollapsed(!open)}>
-        <DashboardShellSidebar items={sidebarItems} activeKey={activeView} onSelect={selectView} />
-        <SidebarInset className="contentPane relative">
-          <ShellActions />
-          <DashboardContent activeView={activeView} loading={modulesQuery.isLoading} views={views} />
+        <DashboardShellSidebar items={sidebarItems} activeKey={activeView} onSelect={selectView} footerActions={<MihomoPanelSidebarAction />} />
+        <SidebarInset className="contentPane">
+          <DashboardContent
+            activeView={activeView}
+            externalApps={externalApps}
+            loading={modulesQuery.isLoading}
+            serviceStatus={serviceStatus}
+            views={views}
+          />
         </SidebarInset>
       </SidebarProvider>
     </div>
   );
 }
 
-function ShellActions() {
+function MihomoPanelSidebarAction() {
   return (
-    <div className="absolute right-5 top-4 z-20 flex items-center gap-2">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon-sm" aria-label="打开 Mihomo 面板" title="打开 Mihomo 面板" asChild>
-            <a href="/api/proxy-runtime/mihomo/dashboard">
-              <ExternalLink />
-            </a>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>打开 Mihomo 面板</TooltipContent>
-      </Tooltip>
-    </div>
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild size="lg" tooltip="Mihomo 面板" aria-label="Mihomo 面板" className="justify-center">
+          <a href={MIHOMO_PANEL_URL}>
+            <ExternalLink className="size-4" />
+            <span className="sr-only">Mihomo 面板</span>
+          </a>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
 
 function pathForView(item: DashboardNavItem) {
+  if (item.key === DASHBOARD_HOME_VIEW_KEY) return '/';
   const moduleId = encodePathSegment(item.moduleId);
   const key = encodePathSegment(item.key);
   return item.moduleId === item.key ? `/${moduleId}` : `/${moduleId}/${key}`;
 }
 
 function viewFromPath(pathname: string, items: DashboardNavItem[]) {
-  const [moduleId = '', key = ''] = pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  const segments = pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  if (segments.length === 0) return items.find((item) => item.key === DASHBOARD_HOME_VIEW_KEY);
+  const [moduleId = '', key = ''] = segments;
   return items.find((item) => item.moduleId === moduleId && (!key || item.key === key))
     || items.find((item) => item.key === moduleId);
 }

@@ -5,13 +5,21 @@ import {
   type DashboardServiceStatusResponse
 } from '@byte-v-forge/common-ui';
 import { loadDashboardModuleRegistrations as loadRemoteDashboardModuleRegistrations } from './generated-module-registry';
+import { externalDashboardApps, type DashboardExternalApp } from './generated-module-registry';
 import type { DashboardModuleRegistration, DashboardModuleViewProps } from './module-contract';
 import { dashboardNavIcon } from './nav-icons';
 
 export type { DashboardModuleManifest, DashboardModuleRegistration } from './module-contract';
+export type { DashboardExternalApp };
+
+export const DASHBOARD_HOME_VIEW_KEY = 'home';
 
 export async function loadDashboardModuleRegistrations(): Promise<DashboardModuleRegistration[]> {
   return loadRemoteDashboardModuleRegistrations();
+}
+
+export function loadDashboardExternalApps(): DashboardExternalApp[] {
+  return [...externalDashboardApps].sort((left, right) => left.order - right.order || left.label.localeCompare(right.label));
 }
 
 export type { DashboardServiceStatus, DashboardServiceStatusResponse } from '@byte-v-forge/common-ui';
