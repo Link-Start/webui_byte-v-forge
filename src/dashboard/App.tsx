@@ -25,7 +25,7 @@ import {
   type ServiceStatusMap
 } from './module-registry';
 
-const MIHOMO_PANEL_URL = '/api/proxy-runtime/mihomo/dashboard';
+const PROXY_RUNTIME_HOST_PREFIX = 'proxy-runtime.';
 
 export default function App() {
   const modulesQuery = useQuery({
@@ -105,11 +105,12 @@ export default function App() {
 }
 
 function MihomoPanelSidebarAction() {
+  const mihomoPanelURL = useMemo(() => resolveMihomoPanelURL(), []);
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton asChild size="lg" tooltip="Mihomo 面板" aria-label="Mihomo 面板" className="justify-center">
-          <a href={MIHOMO_PANEL_URL}>
+          <a href={mihomoPanelURL}>
             <ExternalLink className="size-4" />
             <span className="sr-only">Mihomo 面板</span>
           </a>
@@ -117,6 +118,12 @@ function MihomoPanelSidebarAction() {
       </SidebarMenuItem>
     </SidebarMenu>
   );
+}
+
+function resolveMihomoPanelURL() {
+  const { protocol, hostname, port } = window.location;
+  const host = hostname.startsWith(PROXY_RUNTIME_HOST_PREFIX) ? hostname : `${PROXY_RUNTIME_HOST_PREFIX}${hostname}`;
+  return `${protocol}//${host}${port ? `:${port}` : ''}/`;
 }
 
 function pathForView(item: DashboardNavItem) {
