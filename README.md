@@ -1,39 +1,30 @@
 # WebUI
 
-WebUI 是 byte-v-forge 的浏览器操作界面，提供账号、邮箱、GoPay 和任务状态的统一前端入口。
-仓库同时提供 `server/` 下的 Go API 入口，负责把浏览器请求转发到 `gpt-service` 和 `mailbox`。
+`webui` 是 byte-v-forge 的 dashboard shell 与前端装载基础仓，提供统一布局、主题、导航、service catalog 和远程模块加载能力。
 
-## 本地开发
+## 核心能力
 
-```bash
-npm install
-npm run dev
+- 提供平台 dashboard shell、基础路由、布局、主题和导航框架。
+- 提供 service catalog Web/API 基础入口，支撑部署期声明式装载业务模块。
+- 通过模块装载接口集成 GPT、Mailbox、SMS、GoPay、Proxy、Workflow 等服务拥有方前端。
+- 前端基础组件、uikit 和通用数据驱动组件来自 `common-lib/ui`，本仓只保留 shell 与装载边界。
+- 后端 server 只负责 shell/API gateway/service catalog 基础能力，不承载业务动作或 provider 状态机。
+
+## 使用方式
+
+业务页面、业务数据请求和资源详情归各业务仓；最终组合由 `deploy` 的 dashboard catalog 和部署配置声明。本仓通过 npm 包边界消费公共 UI 能力，不直接 import sibling repo 业务源码。
+
+## 入口
+
+- 前端源码：`src/`
+- Shell server：`server/`
+- 契约生成脚本：`scripts/generate-proto.sh`
+- 静态资源：`public/`
+
+## 常用检查
+
+```sh
+npm run proto:frontend
+npm run lint
+git diff --check
 ```
-
-开发服务器默认监听 `5174`，并把 `/api` 代理到 `http://127.0.0.1:8080`。
-
-API 服务：
-
-```bash
-npm run proto
-cd server
-go build ./...
-LISTEN_ADDR=:8080 go run .
-```
-
-## 构建
-
-```bash
-npm run build
-```
-
-构建前会根据 `proto/` 生成本地 TypeScript 类型到 `src/proto/`。
-同一命令会生成 Go gRPC 类型到 `server/pb/`，供 API 服务编译使用。
-
-## 契约生成
-
-```bash
-npm run proto
-```
-
-生成物位于 `src/proto/` 和 `server/pb/`，属于本地可再生成产物。
